@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"fmt"
@@ -7,16 +7,22 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/fenriz07/go-grpc-mongo/product"
+	"github.com/fenriz07/go-grpc-mongo/server/bd"
+	"github.com/fenriz07/go-grpc-mongo/server/handler"
+	"github.com/fenriz07/go-grpc-mongo/server/product"
 	"google.golang.org/grpc"
 )
 
-type server struct {
-	product.UnimplementedProductServiceServer
-}
-
 func main() {
-	fmt.Println("Iniciando el server go")
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	log.Println("Iniciando server go")
+
+	if bd.ChequeoConnection() == 0 {
+		log.Fatal("Sin conexión a la bd")
+		return
+	}
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 
@@ -26,10 +32,10 @@ func main() {
 
 	s := grpc.NewServer()
 
-	product.RegisterProductServiceServer(s, &server{})
+	product.RegisterProductServiceServer(s, &handler.Server{})
 
 	go func() {
-		fmt.Println("Iniciando server grpc")
+		log.Println("Iniciando server grpc")
 		if err := s.Serve(lis); err != nil {
 			log.Fatal("Fallo en el inicio del server " + err.Error())
 		}
